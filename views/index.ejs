@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Room</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font: 13px Helvetica, Arial; }
+        #message_board { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+        #login { position: absolute; left: 50%; margin-left: -100px; top: 50%; margin-top: -100px; text-align: center; }
+        form input, #login input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+        form button, #ok { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+        form button:hover, #ok:hover { opacity: 0.8; background-color: rgb(130, 224, 255); }
+        #cancel { background: rgb(188, 0, 0); }        
+        #cancel:hover { opacity: 0.8; background-color: rgb(188, 0, 0); }
+        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages li { padding: 5px 10px; }
+        #messages li:nth-child(odd) { background: #eee; }
+        h2 {padding: 5px; top: 0}
+    </style>   
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script type ="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script type ="text/javascript">
+        $(document).ready(function(){
+            var socket = io.connect();
+            socket.on('login', function(){
+                $('#login').show();
+                $('#message_board').hide();
+                $('#ok').click(function(){
+                    if(!$('#name').val().trim()){
+                        $('p').html("Please enter a name");
+                        return false;
+                    }
+                    else{
+                        socket.emit('user_name', $('#name').val());
+                    }
+                });
+                $('#cancel').click(function(){
+                    $('p').html("You must submit your name to view message board");
+                    return false;
+                });
+            });
+            socket.on('ready_chat', function(){
+                $('#login').hide();
+                $('#message_board').show();
+            });
+            $(function () {
+                $('form').submit(function(e){
+                    e.preventDefault();
+                    if(!$('#message').val().trim()){
+                        return false;
+                    } 
+                    else{
+                        socket.emit('chat message', $('#message').val());
+                    }
+            });
+                socket.on('chat message', function(msg, this_user){
+                    console.log(this_user)
+                    this_user = JSON.stringify(this_user.this_user)
+                    name = this_user.replace(/['"]+/g, '');
+                    $('#messages').append($('<li>').html(`${name}:` + ' ' + msg));
+            });
+        });
+    });
+    </script>
+</head>
+<body>
+    <div id='login'>
+        <form>
+            <h2>Enter Dojo Message Board</h2>
+            <input type='text' id='name' name='name' placeholder='Your name'>
+            <input type='button' id='ok' value='Submit'>
+            <input type='button' id='cancel' value='Cancel'>
+            <p></p>
+        </form>
+    </div>
+    <ul id="messages"></ul>
+    <div id='message_board'>
+        <form action="">
+            <input id="message" /><button>Send</button>
+        </form>
+    </div>
+</body>
+</html>
